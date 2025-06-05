@@ -26,11 +26,13 @@ app.use(
   })
 );
 
-// CORS config
+
+// Allow your Vercel frontend to access the backend
 app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
+  origin: 'https://akemidids.vercel.app',
+  credentials: true,
 }));
+
 
 // JSON middleware
 app.use(express.json());
