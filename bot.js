@@ -12,7 +12,7 @@ bot.onText(/\/start/, (msg) => {
           {
             text: "🎮 Play Jaws Game",
             web_app: {
-              url: "https://your-vercel-app.vercel.app"
+              url: "https://akemidids.vercel.app"
             }
           }
         ]
