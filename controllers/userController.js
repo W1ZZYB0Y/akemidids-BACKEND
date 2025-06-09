@@ -126,6 +126,48 @@ const completeTask = async (req, res) => {
   }
 };
 
+
+// Get user profile by Telegram ID
+exports.getUserProfile = async (req, res) => {
+  try {
+    const { telegramId } = req.params;
+    const user = await User.findOne({ telegramId });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Update or assign username
+exports.updateUsername = async (req, res) => {
+  const { telegramId, username } = req.body;
+  if (!telegramId || !username) {
+    return res.status(400).json({ error: "Telegram ID and username are required" });
+  }
+
+  try {
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({ error: "Username already taken" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { telegramId },
+      { username },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ message: "Username updated", user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+    
 // Export it
 module.exports = {
   registerUser,
@@ -134,4 +176,5 @@ module.exports = {
   getUser,
   getReferrals,
   getUserProfile,
+  updateUsername,
 };
