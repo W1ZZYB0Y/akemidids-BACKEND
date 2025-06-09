@@ -8,8 +8,14 @@ const {
   completeTask,
   getUser,
   getReferrals,
+  updateUsername,
   getUserProfile
 } = require('../controllers/userController');
+
+
+// Update username
+router.post('/update-username', updateUsername);
+
 
 // Register a new user
 router.post('/register', registerUser);
