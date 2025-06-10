@@ -24,33 +24,48 @@ const updateRank = (user) => {
 };
 
 const registerUser = async (req, res) => {
-  const { telegramId, username, referredBy, ip } = req.body;
+  const { telegramId, username, ip } = req.body;
+  const refUsername = req.query.ref; // e.g., /api/users/register?ref=someuser
+
   try {
     let user = await User.findOne({ telegramId });
     if (!user) {
       user = new User({ telegramId, username, ip });
-      if (referredBy) {
-        const referrer = await User.findOne({ telegramId: referredBy });
+
+      if (refUsername) {
+        const referrer = await User.findOne({ username: refUsername });
+
         if (referrer && referrer.referrals.length < 10) {
-          referrer.referrals.push(telegramId);
+          referrer.referrals.push(user._id);
+
           let reward = 10;
           if (referrer.referrals.length === 1) reward = 50;
           else if (referrer.referrals.length === 2) reward = 25;
+
           referrer.balance += reward;
           referrer.referralRewards += reward;
+
+          referrer.referralDetails.push({
+            referredUser: user._id,
+            reward,
+            date: new Date()
+          });
+
+          user.referredBy = referrer._id;
+
           updateRank(referrer);
           await referrer.save();
-          user.referredBy = referredBy;
         }
       }
+
       await user.save();
     }
+
     return res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
 const click = async (req, res) => {
   const { telegramId } = req.body;
   const user = await User.findOne({ telegramId });
