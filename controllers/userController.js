@@ -25,7 +25,7 @@ const updateRank = (user) => {
 
 const registerUser = async (req, res) => {
   const { telegramId, username, ip } = req.body;
-  const refUsername = req.query.ref; // e.g., /api/users/register?ref=someuser
+  const refUsername = req.query.ref;
 
   try {
     let user = await User.findOne({ telegramId });
@@ -66,6 +66,7 @@ const registerUser = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 const click = async (req, res) => {
   const { telegramId } = req.body;
   const user = await User.findOne({ telegramId });
@@ -82,45 +83,6 @@ const click = async (req, res) => {
   }
 };
 
-
-const getUser = async (req, res) => {
-  const user = await User.findOne({ telegramId: req.params.telegramId });
-  if (!user) return res.status(404).json({ error: "User not found" });
-  res.json(user);
-};
-
-const getReferrals = async (req, res) => {
-  const user = await User.findOne({ telegramId: req.params.telegramId });
-  if (!user) return res.status(404).json({ error: "User not found" });
-
-  const referredUsers = await User.find({ referredBy: user.telegramId });
-  res.json(referredUsers);
-};
-
-const getUserProfile = async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json({
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      balance: user.balance,
-      rank: user.rank,
-      referralCount: user.referrals.length,
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-
-// controllers/userController.js
 const completeTask = async (req, res) => {
   try {
     const { telegramId, taskName, reward } = req.body;
@@ -141,21 +103,53 @@ const completeTask = async (req, res) => {
   }
 };
 
+const getUser = async (req, res) => {
+  const user = await User.findOne({ telegramId: req.params.telegramId });
+  if (!user) return res.status(404).json({ error: "User not found" });
+  res.json(user);
+};
 
-// Get user profile by Telegram ID
-exports.getUserProfile = async (req, res) => {
+const getReferrals = async (req, res) => {
+  try {
+    const user = await User.findOne({ telegramId: req.params.telegramId });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Populate referralDetails with usernames
+    const populated = await User.findById(user._id).populate({
+      path: "referralDetails.referredUser",
+      select: "username"
+    });
+
+    res.json(populated.referralDetails || []);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch referrals" });
+  }
+};
+
+const getUserProfile = async (req, res) => {
   try {
     const { telegramId } = req.params;
-    const user = await User.findOne({ telegramId });
+    const user = await User.findOne({ telegramId }).populate({
+      path: "referralDetails.referredUser",
+      select: "username"
+    });
+
     if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+
+    res.json({
+      telegramId: user.telegramId,
+      username: user.username,
+      balance: user.balance,
+      rank: user.rank,
+      referralCount: user.referrals.length,
+      referralDetails: user.referralDetails,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Update or assign username
-exports.updateUsername = async (req, res) => {
+const updateUsername = async (req, res) => {
   const { telegramId, username } = req.body;
   if (!telegramId || !username) {
     return res.status(400).json({ error: "Telegram ID and username are required" });
@@ -164,7 +158,7 @@ exports.updateUsername = async (req, res) => {
   try {
     const existingUsername = await User.findOne({ username });
     if (existingUsername) {
-      return res.status(400).json({ error: "Username already taken" });
+      return res.status(400).json({ message: "Username already taken" });
     }
 
     const user = await User.findOneAndUpdate(
@@ -173,21 +167,18 @@ exports.updateUsername = async (req, res) => {
       { new: true }
     );
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     res.json({ message: "Username updated", user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-    
-// Export it
+
 module.exports = {
   registerUser,
   click,
-  completeTask,  // ✅ include it here
+  completeTask,
   getUser,
   getReferrals,
   getUserProfile,
