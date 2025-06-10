@@ -25,13 +25,13 @@ app.use(
   })
 );
 
-// Allow your Vercel frontend to access the backend
+// Allow frontend access
 app.use(cors({
   origin: 'https://akemidids.vercel.app',
   credentials: true,
 }));
 
-// JSON middleware
+// Middleware
 app.use(express.json());
 
 // Routes
@@ -43,15 +43,14 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// Connect to MongoDB and start server
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('✅ MongoDB connected');
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-})
-.catch((error) => {
-  console.error('❌ MongoDB connection error:', error);
-});
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('MongoDB connected');
+  })
+  .catch((error) => {
+    console.error('MongoDB connection error:', error);
+  });
+
+// Start server regardless
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
