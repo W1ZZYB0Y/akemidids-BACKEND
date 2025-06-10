@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-// e.g. inside your “create user” route
 
 const {
   registerUser,
@@ -12,27 +11,25 @@ const {
   getUserProfile
 } = require('../controllers/userController');
 
-
-// Update username
-router.post('/update-username', updateUsername);
-
-
-// Register a new user
+// ✅ Register with referral username (handle in controller)
 router.post('/register', registerUser);
 
-// Handle user clicking
+// ✅ Update username
+router.post('/update-username', updateUsername);
+
+// ✅ Handle user clicking
 router.post('/click', click);
 
-// Complete a task
+// ✅ Complete a task
 router.post('/task', completeTask);
 
-// Get user by Telegram ID
-router.get('/:telegramId', getUser);
+// ✅ Get user profile (must come before /:telegramId to avoid conflict)
+router.get('/profile/:id', getUserProfile);
 
-// Get user's referrals
+// ✅ Get user's referrals
 router.get('/:telegramId/referrals', getReferrals);
 
-// Get user profile by ID
-router.get('/profile/:id', getUserProfile);
+// ✅ Get user by Telegram ID
+router.get('/:telegramId', getUser);
 
 module.exports = router;
