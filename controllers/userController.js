@@ -23,6 +23,7 @@ const updateRank = (user) => {
   }
 };
 
+// ✅ Register new user with optional referral (by username)
 const registerUser = async (req, res) => {
   const { telegramId, username, ip } = req.body;
   const refUsername = req.query.ref;
@@ -58,6 +59,7 @@ const registerUser = async (req, res) => {
         }
       }
 
+      updateRank(user);
       await user.save();
     }
 
@@ -67,6 +69,7 @@ const registerUser = async (req, res) => {
   }
 };
 
+// ✅ Handle click earning
 const click = async (req, res) => {
   const { telegramId } = req.body;
   const user = await User.findOne({ telegramId });
@@ -83,6 +86,7 @@ const click = async (req, res) => {
   }
 };
 
+// ✅ Complete a task
 const completeTask = async (req, res) => {
   try {
     const { telegramId, taskName, reward } = req.body;
@@ -103,18 +107,19 @@ const completeTask = async (req, res) => {
   }
 };
 
+// ✅ Get user by Telegram ID
 const getUser = async (req, res) => {
   const user = await User.findOne({ telegramId: req.params.telegramId });
   if (!user) return res.status(404).json({ error: "User not found" });
   res.json(user);
 };
 
+// ✅ Get referrals (by username)
 const getReferrals = async (req, res) => {
   try {
-    const user = await User.findOne({ telegramId: req.params.telegramId });
+    const user = await User.findOne({ username: req.params.username });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Populate referralDetails with usernames
     const populated = await User.findById(user._id).populate({
       path: "referralDetails.referredUser",
       select: "username"
@@ -126,19 +131,16 @@ const getReferrals = async (req, res) => {
   }
 };
 
-const User = require('../models/User');
-
-// GET USER PROFILE BY telegramId or username
+// ✅ Get user profile (by telegramId or fallback to username)
 const getUserProfile = async (req, res) => {
-  const { telegramId } = req.params;
+  const { id } = req.params;
 
   try {
-    let user = await User.findOne({ telegramId })
+    let user = await User.findOne({ telegramId: id })
       .populate('referralDetails.referredUser', 'username');
 
-    // Fallback if not found by telegramId — try username instead
     if (!user) {
-      user = await User.findOne({ username: telegramId })
+      user = await User.findOne({ username: id })
         .populate('referralDetails.referredUser', 'username');
     }
 
@@ -152,37 +154,7 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-// UPDATE USERNAME
-const updateUsername = async (req, res) => {
-  const { telegramId, username } = req.body;
-
-  if (!telegramId || !username) {
-    return res.status(400).json({ error: "Telegram ID and username are required" });
-  }
-
-  try {
-    const existingUsername = await User.findOne({ username });
-    if (existingUsername) {
-      return res.status(400).json({ message: "Username already taken" });
-    }
-
-    const user = await User.findOneAndUpdate(
-      { telegramId },
-      { username },
-      { new: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    res.json({ message: "Username updated", user });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-
+// ✅ Update username (ensuring uniqueness)
 const updateUsername = async (req, res) => {
   const { telegramId, username } = req.body;
 
@@ -193,7 +165,6 @@ const updateUsername = async (req, res) => {
   try {
     const existingUser = await User.findOne({ username });
 
-    // If the username exists and belongs to another user
     if (existingUser && existingUser.telegramId !== telegramId) {
       return res.status(400).json({ message: "Username already taken" });
     }
@@ -209,12 +180,12 @@ const updateUsername = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Respond with updated user object only
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 module.exports = {
   registerUser,
   click,
