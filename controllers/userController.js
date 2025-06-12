@@ -126,28 +126,62 @@ const getReferrals = async (req, res) => {
   }
 };
 
+const User = require('../models/User');
+
+// GET USER PROFILE BY telegramId or username
 const getUserProfile = async (req, res) => {
+  const { telegramId } = req.params;
+
   try {
-    const { telegramId } = req.params;
-    const user = await User.findOne({ telegramId }).populate({
-      path: "referralDetails.referredUser",
-      select: "username"
-    });
+    let user = await User.findOne({ telegramId })
+      .populate('referralDetails.referredUser', 'username');
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+    // Fallback if not found by telegramId — try username instead
+    if (!user) {
+      user = await User.findOne({ username: telegramId })
+        .populate('referralDetails.referredUser', 'username');
+    }
 
-    res.json({
-      telegramId: user.telegramId,
-      username: user.username,
-      balance: user.balance,
-      rank: user.rank,
-      referralCount: user.referrals.length,
-      referralDetails: user.referralDetails,
-    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+// UPDATE USERNAME
+const updateUsername = async (req, res) => {
+  const { telegramId, username } = req.body;
+
+  if (!telegramId || !username) {
+    return res.status(400).json({ error: "Telegram ID and username are required" });
+  }
+
+  try {
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({ message: "Username already taken" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { telegramId },
+      { username },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ message: "Username updated", user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 const updateUsername = async (req, res) => {
   const { telegramId, username } = req.body;
