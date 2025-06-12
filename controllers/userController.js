@@ -151,13 +151,16 @@ const getUserProfile = async (req, res) => {
 
 const updateUsername = async (req, res) => {
   const { telegramId, username } = req.body;
+
   if (!telegramId || !username) {
     return res.status(400).json({ error: "Telegram ID and username are required" });
   }
 
   try {
-    const existingUsername = await User.findOne({ username });
-    if (existingUsername) {
+    const existingUser = await User.findOne({ username });
+
+    // If the username exists and belongs to another user
+    if (existingUser && existingUser.telegramId !== telegramId) {
       return res.status(400).json({ message: "Username already taken" });
     }
 
@@ -165,16 +168,19 @@ const updateUsername = async (req, res) => {
       { telegramId },
       { username },
       { new: true }
-    );
+    ).populate({
+      path: "referralDetails.referredUser",
+      select: "username"
+    });
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    res.json({ message: "Username updated", user });
+    // Respond with updated user object only
+    res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
 module.exports = {
   registerUser,
   click,
