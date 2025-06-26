@@ -8,28 +8,29 @@ const {
   getUser,
   getReferrals,
   updateUsername,
-  getUserProfile
+  getUserProfile,
 } = require('../controllers/userController');
 
-// ✅ Register a user with optional referral username
+// ✅ Register a new user with optional referral code in query (?ref=<referrerUsername>)
 router.post('/register', registerUser);
 
-// ✅ Update user's Telegram username
+// ✅ Update a user's Telegram username
 router.post('/update-username', updateUsername);
 
-// ✅ Handle user click (earn 1 coin)
+// ✅ Handle a click action for a user (earns coins)
 router.post('/click', click);
 
-// ✅ Mark a task as completed
+// ✅ Complete a specific task for the user
 router.post('/task', completeTask);
 
-// ✅ Get user's full profile by internal DB ID
+// ✅ Get a user profile by ID, Telegram ID, or username
+// This will return the full profile including referrals
 router.get('/profile/:id', getUserProfile);
 
-// ✅ Get user's referrals by Telegram username
+// ✅ Get the list of referrals made by a user, using their username
 router.get('/referrals/:username', getReferrals);
 
-// ✅ Get user by Telegram ID
+// ✅ Get a user directly by their Telegram ID
 router.get('/telegram/:telegramId', getUser);
 
 module.exports = router;
