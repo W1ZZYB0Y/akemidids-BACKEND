@@ -15,7 +15,7 @@ bot.onText(/\/start(?:\s+(.*))?/, async (msg, match) => {
     bot.sendMessage(chatId, "Welcome! Tap below to play 👇", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "🎮 Play Jaws Game", web_app: { url: "https://akemidids.vercel.app" } }]
+          [{ text: "🎮 Play Jaws Game", web_app: { url: "https://t.me/JawsGameBot/Jaws" } }]
         ]
       }
     });
