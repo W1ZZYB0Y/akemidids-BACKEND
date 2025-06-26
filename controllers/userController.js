@@ -23,19 +23,18 @@ const updateRank = (user) => {
   }
 };
 
-// ✅ Register new user with optional referral (by username)
+// ✅ Register new user with optional referral (by user ID)
 const registerUser = async (req, res) => {
   const { telegramId, username, ip } = req.body;
-  const refUsername = req.query.ref;
+  const refId = req.query.ref; // <-- will be MongoDB ObjectId string
 
   try {
     let user = await User.findOne({ telegramId });
     if (!user) {
       user = new User({ telegramId, username, ip });
 
-      if (refUsername) {
-        const referrer = await User.findOne({ username: refUsername });
-
+      if (refId) {
+        const referrer = await User.findById(refId); // find by Mongo ID
         if (referrer && referrer.referrals.length < 10) {
           referrer.referrals.push(user._id);
 
@@ -49,11 +48,10 @@ const registerUser = async (req, res) => {
           referrer.referralDetails.push({
             referredUser: user._id,
             reward,
-            date: new Date()
+            date: new Date(),
           });
 
           user.referredBy = referrer._id;
-
           updateRank(referrer);
           await referrer.save();
         }
@@ -114,7 +112,7 @@ const getUser = async (req, res) => {
   res.json(user);
 };
 
-// ✅ Get referrals (by username)
+// ✅ Get referrals (by username) — we’ll keep this for compatibility
 const getReferrals = async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username });
@@ -122,7 +120,7 @@ const getReferrals = async (req, res) => {
 
     const populated = await User.findById(user._id).populate({
       path: "referralDetails.referredUser",
-      select: "username"
+      select: "username",
     });
 
     res.json(populated.referralDetails || []);
@@ -131,7 +129,7 @@ const getReferrals = async (req, res) => {
   }
 };
 
-// ✅ Get user profile (by telegramId or fallback to username)
+// ✅ Get user profile
 const getUserProfile = async (req, res) => {
   const { id } = req.params;
 
@@ -154,7 +152,7 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-// ✅ Update username (ensuring uniqueness)
+// ✅ Update username
 const updateUsername = async (req, res) => {
   const { telegramId, username } = req.body;
 
@@ -175,7 +173,7 @@ const updateUsername = async (req, res) => {
       { new: true }
     ).populate({
       path: "referralDetails.referredUser",
-      select: "username"
+      select: "username",
     });
 
     if (!user) return res.status(404).json({ error: "User not found" });
